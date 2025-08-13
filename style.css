@@ -1,0 +1,46 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background-color: #f9f9f9;
+  color: #222;
+}
+
+.hero {
+  background: #004080;
+  color: white;
+  padding: 2rem;
+  text-align: center;
+}
+
+.navbar {
+  background: #222;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.navbar a {
+  color: white;
+  margin: 0 1rem;
+  text-decoration: none;
+}
+
+.section {
+  padding: 2rem;
+  max-width: 900px;
+  margin: auto;
+}
+
+.responsive-img {
+  width: 100%;
+  max-width: 700px;
+  height: auto;
+  margin: 1rem 0;
+}
+
+footer {
+  background: #222;
+  color: white;
+  text-align: center;
+  padding: 1rem;
+}

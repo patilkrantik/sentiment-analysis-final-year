@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sentiment App with Auth</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      signInWithPopup,
+      GoogleAuthProvider,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAYgiH3KSU3WnyRxq1fh7dghuLqocYd5lk",
+      authDomain: "sentiment-analysis-final-year.firebaseapp.com	",
+      projectId: "sentiment-analysis-final-year",
+      appId: "82560817133"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const loginSection = document.getElementById("loginSection");
+    const appSection = document.getElementById("appSection");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    document.getElementById("googleLogin").addEventListener("click", () => {
+      signInWithPopup(auth, provider).catch(console.error);
+    });
+
+    document.getElementById("emailLoginBtn").addEventListener("click", () => {
+      const email = document.getElementById("email").value;
+      const pass = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+    });
+
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loginSection.classList.add("hidden");
+        appSection.classList.remove("hidden");
+      } else {
+        loginSection.classList.remove("hidden");
+        appSection.classList.add("hidden");
+      }
+    });
+
+    window.analyzeSentiment = function () {
+      const text = document.getElementById("textInput").value.trim();
+      const resultBox = document.getElementById("resultBox");
+
+      if (!text) {
+        resultBox.innerText = "⚠️ Please enter text!";
+        resultBox.className = "mt-4 p-4 rounded-xl bg-red-600 text-white";
+        resultBox.classList.remove("hidden");
+        gsap.fromTo(resultBox, { scale: 0.8 }, { scale: 1, duration: 0.4 });
+        return;
+      }
+
+      const sentiments = ["😊 Positive", "😐 Neutral", "😞 Negative"];
+      const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
+
+      resultBox.innerText = `Sentiment: ${sentiment}`;
+      resultBox.className = "mt-4 p-4 rounded-xl bg-green-600 text-white";
+      resultBox.classList.remove("hidden");
+      gsap.fromTo(resultBox, { opacity: 0 }, { opacity: 1, duration: 0.5 });
+    }
+  </script>
+
+  <style>
+    canvas#bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+  </style>
+</head>
+<body class="relative bg-black text-white min-h-screen flex items-center justify-center overflow-hidden">
+  <canvas id="bg"></canvas>
+
+  <!-- Login Section -->
+  <div id="loginSection" class="bg-slate-900 bg-opacity-90 p-8 rounded-2xl max-w-md w-full space-y-4 text-center">
+    <h2 class="text-2xl font-bold">🔐 Login to Continue</h2>
+    <input id="email" type="email" placeholder="Email" class="w-full p-3 rounded bg-slate-800 text-white" />
+    <input id="password" type="password" placeholder="Password" class="w-full p-3 rounded bg-slate-800 text-white" />
+    <button id="emailLoginBtn" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded font-semibold">Login with Email</button>
+    <button id="googleLogin" class="w-full bg-red-600 hover:bg-red-700 p-3 rounded font-semibold">Login with Google</button>
+  </div>
+
+  <!-- App Section -->
+  <div id="appSection" class="hidden bg-slate-950 bg-opacity-80 p-8 rounded-2xl max-w-xl w-full text-center space-y-6">
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold">🧠 Sentiment Classifier</h1>
+      <button id="logoutBtn" class="text-sm text-red-400 hover:underline">Logout</button>
+    </div>
+    <textarea id="textInput" class="w-full p-4 rounded-xl bg-slate-800 text-white resize-none" rows="4" placeholder="Enter your text here..."></textarea>
+    <button onclick="analyzeSentiment()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-semibold">Analyze</button>
+    <div id="resultBox" class="hidden text-lg font-medium"></div>
+  </div>
+
+  <!-- Three.js Stars -->
+  <script>
+    const canvas = document.getElementById('bg');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const starsGeometry = new THREE.BufferGeometry();
+    const positions = [];
+    for (let i = 0; i < 1000; i++) {
+      positions.push((Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000, -Math.random() * 2000);
+    }
+    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+    const starField = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(starField);
+
+    camera.position.z = 5;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      starField.rotation.y += 0.0005;
+      renderer.render(scene, camera);
+    }
+
+    animate();
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
