@@ -34,88 +34,113 @@
     <div id="resultBox" class="hidden text-lg font-medium"></div>
   </div>
 
-  <!-- Firebase & App Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import {
-      getAuth,
-      signInWithEmailAndPassword,
-      signInWithPopup,
-      GoogleAuthProvider,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+   <!-- Firebase & App + OpenAI Logic -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-    // ✅ Full, correct Firebase config — replace with your exact values from Firebase Console
-    const firebaseConfig = {
-       apiKey: "AIzaSyAfEf5NFx86CM3OZ_bpeSIN09VKDLTbjtI",
-  authDomain: "sentiment-final-year-db997.firebaseapp.com",
-  projectId: "sentiment-final-year-db997",
-  storageBucket: "sentiment-final-year-db997.firebasestorage.app",
-  messagingSenderId: "85180572103",
-  appId: "1:85180572103:web:08e754a0166892473279e2",
-  measurementId: "G-KLY4GKMMKM"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyAYgiH3KSU3WnyRxq1fh7dghuLqocYd5lk",
+    authDomain: "sentiment-analysis-final-year.firebaseapp.com",
+    projectId: "sentiment-analysis-final-year",
+    storageBucket: "sentiment-analysis-final-year.appspot.com",
+    messagingSenderId: "82560817133",
+    appId: "1:82560817133:web:6e441b269bceee89a379e4",
+    measurementId: "G-YWRRM8BKXJ"
+  };
 
-    // ✅ Wait for DOM to load before attaching listeners
-    document.addEventListener("DOMContentLoaded", () => {
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const provider = new GoogleAuthProvider();
+  const OPENAI_API_KEY = "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"; // <-- replace with your real key
 
-      const loginSection = document.getElementById("loginSection");
-      const appSection = document.getElementById("appSection");
-      const logoutBtn = document.getElementById("logoutBtn");
+  document.addEventListener("DOMContentLoaded", () => {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-      // Google login
-      document.getElementById("googleLogin").addEventListener("click", () => {
-        signInWithPopup(auth, provider).catch(err => alert(err.message));
-      });
+    const loginSection = document.getElementById("loginSection");
+    const appSection   = document.getElementById("appSection");
+    const logoutBtn    = document.getElementById("logoutBtn");
+    const analyzeBtn   = document.getElementById("analyzeBtn");
+    const textInput    = document.getElementById("textInput");
+    const resultBox    = document.getElementById("resultBox");
 
-      // Email login
-      document.getElementById("emailLoginBtn").addEventListener("click", () => {
-        const email = document.getElementById("email").value;
-        const pass = document.getElementById("password").value;
-        signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
-      });
-
-      // Logout
-      logoutBtn.addEventListener("click", () => signOut(auth));
-
-      // Auth state change
-      onAuthStateChanged(auth, user => {
-        if (user) {
-          loginSection.classList.add("hidden");
-          appSection.classList.remove("hidden");
-        } else {
-          loginSection.classList.remove("hidden");
-          appSection.classList.add("hidden");
-        }
-      });
-
-      // Sentiment analysis
-      document.getElementById("analyzeBtn").addEventListener("click", () => {
-        const text = document.getElementById("textInput").value.trim();
-        const resultBox = document.getElementById("resultBox");
-
-        if (!text) {
-          resultBox.innerText = "⚠️ Please enter text!";
-          resultBox.className = "mt-4 p-4 rounded-xl bg-red-600 text-white";
-          resultBox.classList.remove("hidden");
-          gsap.fromTo(resultBox, { scale: 0.8 }, { scale: 1, duration: 0.4 });
-          return;
-        }
-
-        const sentiments = ["😊 Positive", "😐 Neutral", "😞 Negative"];
-        const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
-
-        resultBox.innerText = `Sentiment: ${sentiment}`;
-        resultBox.className = "mt-4 p-4 rounded-xl bg-green-600 text-white";
-        resultBox.classList.remove("hidden");
-        gsap.fromTo(resultBox, { opacity: 0 }, { opacity: 1, duration: 0.5 });
-      });
+    // ----- Firebase Auth -----
+    document.getElementById("googleLogin").addEventListener("click", () => {
+      signInWithPopup(auth, provider).catch(err => alert(err.message));
     });
-  </script>
+
+    document.getElementById("emailLoginBtn").addEventListener("click", () => {
+      const email = document.getElementById("email").value;
+      const pass  = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+    });
+
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loginSection.classList.add("hidden");
+        appSection.classList.remove("hidden");
+      } else {
+        loginSection.classList.remove("hidden");
+        appSection.classList.add("hidden");
+      }
+    });
+
+    // ----- ChatGPT (OpenAI) -----
+    async function callChatGPT(prompt) {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: prompt }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      if (!data.choices || !data.choices[0]) {
+  throw new Error(data.error?.message || "Invalid response from OpenAI");
+}
+return data.choices[0].message.content;
+
+    }
+
+    analyzeBtn.addEventListener("click", async () => {
+      const text = textInput.value.trim();
+      if (!text) return;
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = "Analyzing...";
+
+      try {
+        const gptResult = await callChatGPT(text);
+        resultBox.textContent = gptResult;
+        resultBox.classList.remove("hidden");
+      } catch (e) {
+        console.error(e);
+        resultBox.textContent = "Error while calling OpenAI";
+        resultBox.classList.remove("hidden");
+      }
+
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = "Analyze";
+    });
+  });
+</script>
+
+
 
   <!-- Three.js Stars -->
   <script>
